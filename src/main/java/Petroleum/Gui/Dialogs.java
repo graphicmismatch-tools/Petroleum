@@ -3,6 +3,7 @@ package Petroleum.Gui;
 import Petroleum.Collab.CollabClient;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ChoiceDialog;
@@ -30,9 +31,12 @@ final class Dialogs {
         return dialog.showAndWait();
     }
 
-    static Optional<String[]> session(boolean host, String server, String name) {
+    static Optional<String[]> session(boolean host, String server, String name, boolean local) {
         TextField serverField = new TextField(server);
         serverField.setPromptText("host:port, or tls://host:port for encryption");
+        CheckBox localBox = new CheckBox("Run the server on this computer (LAN, unencrypted)");
+        localBox.setSelected(host && local);
+        serverField.disableProperty().bind(localBox.selectedProperty());
         TextField nameField = new TextField(name);
         TextField roomField = new TextField();
         ChoiceBox<String> joinAs = roleChoice(CollabClient.EDITOR);
@@ -43,6 +47,7 @@ final class Dialogs {
         grid.addRow(1, new Label("Your name"), nameField);
         if (host) {
             grid.addRow(2, new Label("New people join as"), joinAs);
+            grid.add(localBox, 1, 3);
         } else {
             grid.addRow(2, new Label("Room code"), roomField);
         }
@@ -53,7 +58,7 @@ final class Dialogs {
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         return dialog.showAndWait().filter(b -> b == ButtonType.OK).map(b -> new String[] {
                 serverField.getText().trim(), nameField.getText().trim(), roomField.getText().trim(),
-                joinAs.getValue().toLowerCase()});
+                joinAs.getValue().toLowerCase(), String.valueOf(host && localBox.isSelected())});
     }
 
     static void people(CollabClient client) {

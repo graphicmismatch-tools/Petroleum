@@ -4,6 +4,7 @@ import Petroleum.Audio.AudioEngine;
 import Petroleum.Audio.AudioInputDevice;
 import Petroleum.Audio.ExportSettings;
 import Petroleum.Collab.CollabClient;
+import Petroleum.Collab.LanServer;
 import Petroleum.Collab.UntrustedServerException;
 import Petroleum.Graph.Node;
 import Petroleum.Instruments.InstrumentNode;
@@ -156,6 +157,7 @@ public final class SynthApp extends Application {
     private CollabBridge collab;
     private boolean collabLive;
     private boolean collabConnecting;
+    private LanServer lanServer;
     private CollabClient.Endpoint collabEndpoint;
     private boolean playing = false;
     private boolean rendering = false;
@@ -1164,7 +1166,7 @@ public final class SynthApp extends Application {
             return;
         }
         Optional<String[]> fields = Dialogs.session(host, PREFS.get("collabServer", "localhost"),
-                PREFS.get("collabName", System.getProperty("user.name", "")));
+                PREFS.get("collabName", System.getProperty("user.name", "")), PREFS.getBoolean("collabLocal", false));
         if (fields.isEmpty()) {
             return;
         }
@@ -1176,14 +1178,32 @@ public final class SynthApp extends Application {
         String name = fields.get()[1];
         String room = fields.get()[2].toUpperCase();
         String joinAs = fields.get()[3];
-        PREFS.put("collabServer", server);
+        boolean local = Boolean.parseBoolean(fields.get()[4]);
         PREFS.put("collabName", name);
+        if (host) {
+            PREFS.putBoolean("collabLocal", local);
+        }
         CollabClient.Endpoint endpoint;
-        try {
-            endpoint = CollabClient.Endpoint.parse(server);
-        } catch (IllegalArgumentException ex) {
-            showError("Bad server address: " + ex.getMessage());
-            return;
+        if (local) {
+            try {
+                if (lanServer == null) {
+                    lanServer = LanServer.start(LanServer.DEFAULT_PORT);
+                }
+            } catch (java.io.IOException ex) {
+                showError("Could not start a server on port " + LanServer.DEFAULT_PORT + ": " + ex.getMessage()
+                        + "\nIf a Petroleum server already runs on this computer, untick the option and use"
+                        + " localhost:" + LanServer.DEFAULT_PORT + " instead.");
+                return;
+            }
+            endpoint = new CollabClient.Endpoint("127.0.0.1", lanServer.port(), false);
+        } else {
+            PREFS.put("collabServer", server);
+            try {
+                endpoint = CollabClient.Endpoint.parse(server);
+            } catch (IllegalArgumentException ex) {
+                showError("Bad server address: " + ex.getMessage());
+                return;
+            }
         }
         collab = null;
         String token = PREFS.node("collabTokens").get(prefKey(endpoint.key() + "/" + room), null);
@@ -1197,9 +1217,17 @@ public final class SynthApp extends Application {
             onSessionChanged();
             if (host) {
                 Dialogs.info("Session Started", "Room code: " + client.room()
-                        + "\nCollaborators join with Session > Join Session.");
+                        + "\nCollaborators join with Session > Join Session." + (local ? lanHint() : ""));
             }
         });
+    }
+
+    private String lanHint() {
+        List<String> addresses = LanServer.lanAddresses();
+        String port = ":" + lanServer.port();
+        return addresses.isEmpty() ? "\nNo network address found; check this computer is on the LAN."
+                : "\nServer for people on your network: " + String.join(port + " or ", addresses) + port
+                + "\nThe server keeps running until you quit Petroleum.";
     }
 
     private void onReconnect() {

@@ -1,7 +1,8 @@
 # Realtime collaboration
 
 Opt-in realtime co-editing of one patch in the graph editor, through the
-`Petroleum-Server` relay (`../Petroleum-Server`). Client code lives in
+`Petroleum-Server` relay (`../Petroleum-Server`), or through `LanServer`, an
+embedded copy the host can run in-app for LAN sessions. Client code lives in
 `Petroleum.Collab.CollabClient` (headless protocol) and
 `Petroleum.Gui.CollabBridge` (editor diff/apply); the user starts it from the
 **Session** menu.
@@ -93,6 +94,38 @@ When a body changes, the receiver builds a new `Node` instance. The map is
 updated to point the same id at the new instance.
 
 ## Components
+
+### Embedded LAN server: `Petroleum.Collab.LanServer`
+
+The host can tick **Run the server on this computer** in the Host Session
+dialog. `SynthApp` then calls `LanServer.start(7777)` once per app run, keeps
+it in a field and reuses it, and hosts against `127.0.0.1`. The room-code
+dialog lists `LanServer.lanAddresses()`: every up, non-loopback, non-virtual
+interface's site-local IPv4 address. `InetAddress.getLocalHost()` is not used
+because Debian and Ubuntu resolve it to `127.0.1.1`. The checkbox state is
+remembered as `collabLocal`, and the remote server address is not overwritten.
+
+It is a copy of the standalone server below and **must stay
+protocol-identical to it**:
+
+- `Room` and `Peer` are copied verbatim, with only the package and the
+  `Server.` references renamed. `Room`'s `snapshot`/`restore`/`isDirty` are
+  unused here, but are kept so the files still diff cleanly against
+  `../Petroleum-Server`.
+- `LanServer` is `Server` without `main`, TLS or `--data` persistence. It
+  binds the wildcard address and uses `Petroleum.Serialization.Json`. Its
+  errors are `SerializationException`, which `handle` still catches as a
+  `RuntimeException`.
+
+Port protocol changes to both copies. Known ceilings:
+
+- Plain TCP only, so it is for trusted LANs. TLS would need a generated
+  certificate, which the JDK has no public API to create.
+- Rooms are in memory only.
+- The accept loop and every peer thread are daemon threads, so the server
+  runs until the app quits; Leave Session does not stop it. A `BindException`
+  (for example a standalone server on 7777) surfaces as an error naming the
+  port.
 
 ### Server: `../Petroleum-Server`
 
@@ -345,7 +378,8 @@ knob, wire and macro ops leave the history intact.
 - `GraphEditor.clearHistory` is package-private; everything else the bridge
   uses (`toDocument`, `getPatchCodec`, `viewOf` and the silent mutators)
   already existed.
-- `SynthApp` adds the **Session** menu (Host Session..., Join Session...,
+- `SynthApp` adds the **Session** menu (Host Session... with its "run the
+  server on this computer" option, Join Session...,
   Reconnect, Manage People..., New Room Code..., Close Room..., Leave
   Session), a session label at the end of the editor header, and hands the
   bridge two suppliers: "in a subpatch" and "on a dedicated editor screen".

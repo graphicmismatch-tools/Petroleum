@@ -8,9 +8,11 @@ the session takes you straight back to offline editing.
 
 ## What you need
 
-Everyone in a session connects to the same **Petroleum server**. The server is
-a small, separate program that one person runs, on their own computer or on a
-machine everyone can reach. It keeps the shared copy of each room's patch,
+Everyone in a session connects to the same **Petroleum server**. On a home or
+studio network, the host's Petroleum can run it: tick **Run the server on
+this computer** when hosting (see [Hosting on your own network](#hosting-on-your-own-network)).
+Otherwise the server is a small, separate program that one person runs, on
+their own computer or on a machine everyone can reach. It keeps the shared copy of each room's patch,
 which is what everyone syncs to, and passes edits between collaborators. If
 it was started with a data folder, rooms also survive a server restart. How
 to install and run it is covered in the
@@ -31,6 +33,25 @@ encryption.
    `K7QM2XPA`. Send it to your collaborators.
 
 Your current patch becomes the shared one, and you are the room's **host**.
+
+### Hosting on your own network
+
+Tick **Run the server on this computer (LAN, unencrypted)** in step 3 instead
+of filling in **Server**. Petroleum starts a server on port `7777` and the
+room-code dialog also shows the address the others type into **Server**, for
+example `192.168.1.20:7777`.
+
+- The server keeps running until you quit Petroleum, even after you leave the
+  session. Quitting disconnects everyone and loses every room on it, so the
+  others keep only the copy open in their editor.
+- Traffic is not encrypted. Use it only on a network you trust. For anything
+  over the internet, use a separate server with TLS.
+- Rooms are kept in memory only.
+- Your firewall must allow incoming connections on port `7777`. Windows asks
+  the first time.
+- If a separate Petroleum server already uses port `7777` on this computer,
+  hosting fails with an error. Untick the option and type `localhost:7777`
+  instead.
 
 ## Joining a session
 
