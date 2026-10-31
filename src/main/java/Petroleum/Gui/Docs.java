@@ -5,6 +5,7 @@ import Petroleum.Graph.NodeFactory;
 import Petroleum.Granular.GranularPlayerNode;
 import Petroleum.Instruments.InstrumentNode;
 import Petroleum.Modules.PatchNode;
+import Petroleum.Polyphony.PolyNode;
 import Petroleum.Oscillators.IOscillator;
 import Petroleum.Oscillators.OscillatorNode;
 import Petroleum.Oscillators.Implementations.DrawnWaveform;
@@ -3411,7 +3412,19 @@ public final class Docs {
                     one output - so a complex instrument or effect chain you've already built and named \
                     can be wired up exactly like any built-in node, without rebuilding it by hand.""",
                     List.of(), "",
-                    "Save a lead-synth patch as Lead.ptr -> in a new patch, Load patch as node... -> drop the whole instrument in as one box."));
+                    "Save a lead-synth patch as Lead.ptr -> in a new patch, Load patch as node... -> drop the whole instrument in as one box."),
+            new Article(GUIDE_CATEGORY, "Polyphony (Voices)",
+                    "Run 2 to 16 independent copies of any node as one box.",
+                    """
+                    Right-click a node's header and pick Voices. The node keeps its normal inputs, which \
+                    feed every voice, and gains one set of inputs per voice, named like frequency/1 and \
+                    frequency/2, which override the shared input for that voice once wired. The out port is \
+                    every voice added together, and out/1, out/2 and so on are the voices on their own. Edits \
+                    inside the node, like a formula or a subpatch, apply to all voices, and other voices pick \
+                    them up while playing on the next rebuild. Audio Out, Constant, hardware inputs and the \
+                    Tracker, Piano Roll, MIDI Player and Instrument nodes cannot have voices.""",
+                    List.of(), "",
+                    "Tracker 4 pitch1..pitch4 -> a 4-voice subpatch's pitch/1..pitch/4, gate1..gate4 -> gate/1..gate/4 -> its out -> Audio Out."));
 
     public static List<Article> nodeArticlesByCategory() {
         List<Article> ordered = new ArrayList<>();
@@ -3439,6 +3452,7 @@ public final class Docs {
     }
 
     public static String keyFor(NodeFactory nodeFactory, Node node) {
+        node = PolyNode.unwrap(node);
         String factoryKey = nodeFactory.nameOf(node);
         if (factoryKey != null) {
             return factoryKey;

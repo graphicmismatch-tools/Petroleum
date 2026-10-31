@@ -7,6 +7,7 @@ import Petroleum.Instruments.InstrumentNode;
 import Petroleum.Oscillators.OscillatorFactory;
 import Petroleum.Patch.Connection;
 import Petroleum.Patch.Patch;
+import Petroleum.Polyphony.PolyNode;
 import Petroleum.Serialization.Macro;
 import Petroleum.Serialization.PatchCodec;
 import Petroleum.Serialization.PatchDocument;
@@ -222,7 +223,7 @@ public final class GraphEditor {
     }
 
     public void openWaveformEditor(NodeView view) {
-        onOpenWaveformEditor.accept(view.getNode());
+        onOpenWaveformEditor.accept(PolyNode.unwrap(view.getNode()));
     }
 
     public void setOnOpenSoundClipEditor(Consumer<Node> callback) {
@@ -230,7 +231,7 @@ public final class GraphEditor {
     }
 
     public void openSoundClipEditor(NodeView view) {
-        onOpenSoundClipEditor.accept(view.getNode());
+        onOpenSoundClipEditor.accept(PolyNode.unwrap(view.getNode()));
     }
 
     public void setOnOpenInstrumentEditor(Consumer<Node> callback) {
@@ -607,6 +608,13 @@ public final class GraphEditor {
         InstrumentNode newNode = new InstrumentNode(newChannelCount);
         newNode.setInstrument(oldNode.getInstrument());
         convertChannels(view, oldNode, newNode);
+    }
+
+    public void convertVoices(NodeView view, int voices) {
+        if (voices == PolyNode.voicesOf(view.getNode())) {
+            return;
+        }
+        convertChannels(view, view.getNode(), patchCodec.withVoices(view.getNode(), voices));
     }
 
     private void convertChannels(NodeView view, Node oldNode, Node newNode) {
@@ -1119,6 +1127,9 @@ public final class GraphEditor {
     }
 
     public Patch buildPatch() {
+        for (Node node : model.getNodes()) {
+            patchCodec.syncVoices(node);
+        }
         return model.buildPatch();
     }
 

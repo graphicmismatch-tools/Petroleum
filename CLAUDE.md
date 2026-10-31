@@ -170,6 +170,13 @@ there is no nested module directory and no parent POM.
   subclass only when the document holds a one-shot. The one node package that
   depends on `Serialization` (for `PatchDocument`), which depends on it back;
   see `docs/internals/modules.md` for why that edge is deliberate.
+- `Polyphony` - `PolyNode`: any ordinary node given a voice count (Voices in
+  its context menu). It holds N real instances; shared inputs keep the mono
+  names and feed every voice, `port/N` inputs override one voice (default
+  `NaN` = follow shared), `out` sums the voices and `out/N` is each one. Saved
+  as the template node's own JSON plus `voices = N` - no new type. Voice 0 is
+  the template the editor edits; `PatchCodec.syncVoices` re-copies the rest
+  when its stamp changes. See `docs/internals/polyphony.md`.
 - `Patch` - the wiring/execution engine `Graph` deliberately doesn't
   provide: `Connection` (named-port edge) and `Patch` (topological sort,
   cycle/single-`AudioOutNode` validation, allocation-free `renderBlock`, plus
@@ -335,7 +342,7 @@ Documentation is split by audience.
 (`oscillators.md`, `expression.md`, `graph.md`, `dsp.md`, `filters.md`,
 `effects.md`, `granular.md`, `instruments.md`, `physical.md`, `spectral.md`,
 `mixers.md`, `conditionals.md`, `special.md`, `tracker.md`, `sources.md`, `envelopes.md`,
-`sinks.md`, `utility.md`, `modules.md`, `patch.md`, `serialization.md`,
+`sinks.md`, `utility.md`, `modules.md`, `polyphony.md`, `patch.md`, `serialization.md`,
 `diesel.md`, `generators.md`, `audio.md`, `gui.md`, `collaboration.md`), indexed by
 `docs/internals/README.md`, plus `conventions.md` - the governing conventions
 below, written up for contributors so the public docs never have to cite this

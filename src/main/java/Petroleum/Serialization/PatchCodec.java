@@ -17,6 +17,7 @@ import Petroleum.Modules.PatchNode;
 import Petroleum.Oscillators.OscillatorFactory;
 import Petroleum.Oscillators.OscillatorNode;
 import Petroleum.Patch.Connection;
+import Petroleum.Polyphony.PolyNode;
 import Petroleum.Sources.ConstantNode;
 import Petroleum.Sources.NoteNode;
 import Petroleum.Spectral.AdditiveResynthNode;
@@ -264,11 +265,13 @@ public final class PatchCodec {
     }
 
     private Map<String, Object> saveNode(Node node, String id, PatchDocument document, PatchArchive archive) {
+        Node outer = node;
+        node = PolyNode.unwrap(node);
         Map<String, Object> json = Json.object();
         json.put("id", id);
         json.put("type", typeOf(node));
-        json.put("x", document.getX(node));
-        json.put("y", document.getY(node));
+        json.put("x", document.getX(outer));
+        json.put("y", document.getY(outer));
 
         if (node instanceof OscillatorNode oscillatorNode) {
             json.put("oscillator", oscillatorCodec.save(oscillatorNode.getOscillator(), archive));
@@ -329,7 +332,10 @@ public final class PatchCodec {
             }
         }
 
-        Map<String, Float> portValues = document.getPortValues(node);
+        if (outer instanceof PolyNode poly) {
+            json.put("voices", poly.voiceCount());
+        }
+        Map<String, Float> portValues = document.getPortValues(outer);
         if (!portValues.isEmpty()) {
             Map<String, Object> ports = Json.object();
             ports.putAll(portValues);
@@ -339,6 +345,59 @@ public final class PatchCodec {
     }
 
     private Node loadNode(Map<String, Object> json, PatchArchive archive) {
+        int voices = (int) Json.numberOrDefault(json, "voices", 1);
+        if (voices <= 1) {
+            return loadVoice(json, archive);
+        }
+        List<Node> nodes = new ArrayList<>();
+        for (int v = 0; v < voices; v++) {
+            nodes.add(loadVoice(json, archive));
+        }
+        try {
+            return PolyNode.create(nodes, stampOf(nodes.get(0)));
+        } catch (IllegalArgumentException ex) {
+            throw new SerializationException(ex.getMessage(), ex);
+        }
+    }
+
+    public Node withVoices(Node node, int voices) {
+        Node template = PolyNode.unwrap(node);
+        if (voices <= 1) {
+            return template;
+        }
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(template);
+        nodes.addAll(copies(template, voices - 1));
+        return PolyNode.create(nodes, stampOf(template));
+    }
+
+    public void syncVoices(Node node) {
+        if (!(node instanceof PolyNode poly)) {
+            return;
+        }
+        String stamp = stampOf(poly.template());
+        if (!stamp.equals(poly.stamp())) {
+            poly.replaceVoices(copies(poly.template(), poly.voiceCount() - 1), stamp);
+        }
+    }
+
+    private List<Node> copies(Node template, int count) {
+        PatchArchive archive = new PatchArchive();
+        Map<String, Object> json = saveNode(template, "n0", new PatchDocument(), archive);
+        List<Node> nodes = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            nodes.add(loadVoice(json, archive));
+        }
+        return nodes;
+    }
+
+    private String stampOf(Node template) {
+        PatchArchive archive = new PatchArchive();
+        String json = Json.write(saveNode(template, "n0", new PatchDocument(), archive));
+        return json + "#" + archive.contentHash();
+    }
+
+    private Node loadVoice(Map<String, Object> json, PatchArchive archive) {
         String type = Json.string(json, "type");
         Node node = switch (type) {
             case TYPE_OSCILLATOR -> new OscillatorNode(

@@ -161,6 +161,12 @@ field missing?)`.
 | `Waveshaper` | `source = "tanh(3*x)";` | `"x"` |
 | `Mix` | `ports = ["a", "b", "c"];`: names of the inputs to sum | `in0` ... `in3` |
 
+Any node that can be polyphonic also takes `voices = 4;`, with the same
+effect as **Voices** in its context menu. Shared inputs keep their names.
+Per-voice ports are named `port/N` and need quotes in a connection
+(`tracker.pitch2 -> osc."frequency/2";`). `out` is the sum of every voice, and
+`"out/2"` is voice 2 on its own. See the editor guide for details.
+
 The numbered variants in the menu (`"Multiplexer 2"`, `"Tracker 8"`, `"Piano Roll 8"`,
 `"Instrument 4"`, ...) are plain type names with the size built in. They need
 no fields.

@@ -172,6 +172,31 @@ This is how you build an instrument or an effect once and use it everywhere.
 The patch is embedded by value rather than linked, so a patch that uses it
 still opens on a machine that has never seen the original.
 
+## Polyphony
+
+Right-click a node's header and pick **Voices** to run 2, 4, 8 or 16
+independent copies of it as one box. Pick **1 voice (mono)** to go back. This
+works on filters, envelopes, oscillators, effects and patches used as nodes.
+It doesn't work on Audio Out, Constant, MIDI and mic inputs, or the Tracker,
+Piano Roll, MIDI Player and Instrument nodes, which have their own channels.
+
+- The node keeps its ordinary inputs, with their knobs. They feed **every**
+  voice, so existing wires keep working.
+- Each voice also gets its own inputs, named `frequency/1`, `frequency/2` and
+  so on. Wire one, for example a Tracker's `pitch2` into `frequency/2`, and
+  that voice follows it instead of the shared input.
+- `out` is all the voices added together. `out/1`, `out/2` and so on are the
+  voices on their own. With nothing on the per-voice inputs, every voice plays
+  the same thing, so `out` is that many times louder.
+- Edits inside the node, such as a formula, a drawn waveform or a subpatch,
+  apply to every voice. Other voices pick up a change while playing the next
+  time the patch rebuilds, for example on your next wiring change.
+
+A typical polyphonic synth: a Tracker 4 or MIDI Player 4 drives
+`frequency/1`...`frequency/4` of a 4-voice oscillator or subpatch, its `gate`
+outputs drive a 4-voice ADSR's `gate/1`...`gate/4`, and the two summed outputs
+are multiplied into Audio Out.
+
 ## Keyboard shortcuts
 
 ### File

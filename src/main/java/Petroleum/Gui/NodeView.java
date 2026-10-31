@@ -5,6 +5,7 @@ import Petroleum.Effects.WaveshaperNode;
 import Petroleum.Expression.ExpressionException;
 import Petroleum.Expression.FormulaSource;
 import Petroleum.Graph.Node;
+import Petroleum.Polyphony.PolyNode;
 import Petroleum.Graph.Port;
 import Petroleum.Instruments.InstrumentNode;
 import Petroleum.Modules.PatchNode;
@@ -111,23 +112,25 @@ public final class NodeView extends Pane {
         List<Port> inputs = node.getInputPorts();
         List<String> outputs = node.getOutputPorts();
         int rows = Math.max(Math.max(inputs.size(), outputs.size()), 1);
-        boolean isConstant = node instanceof ConstantNode;
-        boolean isTracker = node instanceof TrackerNode;
-        boolean isPianoRoll = node instanceof PianoRollNode;
-        boolean isInstrument = node instanceof InstrumentNode;
-        boolean isMidiInput = node instanceof MidiInputNode;
-        boolean isMidiPlayer = node instanceof MidiPlayerNode;
-        boolean isMicInput = node instanceof MicInputNode;
-        boolean isVirtualLineOut = node instanceof VirtualLineOut;
-        boolean isPatchNode = node instanceof PatchNode;
-        boolean isDrawnWaveform = drawnWaveformOf(node) != null;
-        boolean isSoundClip = soundClipOf(node) != null;
-        WrapperOscillator wrapperOscillator = wrapperOscillatorOf(node);
-        FormulaSource formulaSource = formulaSourceOf(node);
-        NoteSource noteSource = node instanceof NoteSource ns ? ns : null;
-        AnnotationSource annotationSource = node instanceof AnnotationSource a ? a : null;
+        Node subject = PolyNode.unwrap(node);
+        int knobPorts = node instanceof PolyNode poly ? poly.sharedInputCount() : inputs.size();
+        boolean isConstant = subject instanceof ConstantNode;
+        boolean isTracker = subject instanceof TrackerNode;
+        boolean isPianoRoll = subject instanceof PianoRollNode;
+        boolean isInstrument = subject instanceof InstrumentNode;
+        boolean isMidiInput = subject instanceof MidiInputNode;
+        boolean isMidiPlayer = subject instanceof MidiPlayerNode;
+        boolean isMicInput = subject instanceof MicInputNode;
+        boolean isVirtualLineOut = subject instanceof VirtualLineOut;
+        boolean isPatchNode = subject instanceof PatchNode;
+        boolean isDrawnWaveform = drawnWaveformOf(subject) != null;
+        boolean isSoundClip = soundClipOf(subject) != null;
+        WrapperOscillator wrapperOscillator = wrapperOscillatorOf(subject);
+        FormulaSource formulaSource = formulaSourceOf(subject);
+        NoteSource noteSource = subject instanceof NoteSource ns ? ns : null;
+        AnnotationSource annotationSource = subject instanceof AnnotationSource a ? a : null;
 
-        double footerHeight = isConstant ? SLIDER_HEIGHT : inputs.size() * CONTROL_ROW_HEIGHT;
+        double footerHeight = isConstant ? SLIDER_HEIGHT : knobPorts * CONTROL_ROW_HEIGHT;
         if (wrapperOscillator != null) {
             footerHeight += COMBO_ROW_HEIGHT;
         }
@@ -440,7 +443,7 @@ public final class NodeView extends Pane {
         if (isConstant) {
             buildConstantControl(footerY, editor, (ConstantNode) node);
         } else {
-            for (Port port : inputs) {
+            for (Port port : inputs.subList(0, knobPorts)) {
                 footerY = buildPortControl(footerY, editor, port);
             }
         }
@@ -1049,6 +1052,16 @@ public final class NodeView extends Pane {
 
     private void installContextMenu(Rectangle handle, GraphEditor editor) {
         ContextMenu menu = new ContextMenu();
+        if (PolyNode.supports(PolyNode.unwrap(node))) {
+            Menu voices = new Menu("Voices");
+            for (int count : new int[]{1, 2, 4, 8, 16}) {
+                MenuItem item = new MenuItem(count == 1 ? "1 voice (mono)" : count + " voices");
+                item.setDisable(count == PolyNode.voicesOf(node));
+                item.setOnAction(e -> editor.convertVoices(this, count));
+                voices.getItems().add(item);
+            }
+            menu.getItems().add(voices);
+        }
         if (node instanceof TrackerNode trackerNode) {
             menu.getItems().add(convertChannelsMenu(trackerNode.getChannelCount(),
                     count -> editor.convertTrackerChannels(this, count)));

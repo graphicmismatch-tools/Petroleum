@@ -8,6 +8,7 @@ import Petroleum.Collab.LanServer;
 import Petroleum.Collab.UntrustedServerException;
 import Petroleum.Graph.Node;
 import Petroleum.Instruments.InstrumentNode;
+import Petroleum.Polyphony.PolyNode;
 import Petroleum.Modules.PatchNode;
 import Petroleum.Oscillators.OscillatorNode;
 import Petroleum.Oscillators.Implementations.DrawnWaveform;
@@ -162,7 +163,7 @@ public final class SynthApp extends Application {
     private boolean playing = false;
     private boolean rendering = false;
 
-    private record SubpatchFrame(PatchDocument parentDocument, PatchNode originalNode) {
+    private record SubpatchFrame(PatchDocument parentDocument, Node outerNode, PatchNode originalNode) {
     }
 
     private enum Screen { QUICK, EDITOR, DOCS, TRACKER, PIANO_ROLL, WAVEFORM, SOUND_CLIP, INSTRUMENT }
@@ -558,11 +559,11 @@ public final class SynthApp extends Application {
     }
 
     private void openSubpatchEditor(Node node) {
-        if (!(node instanceof PatchNode patchNode)) {
+        if (!(PolyNode.unwrap(node) instanceof PatchNode patchNode)) {
             return;
         }
         stopPlayback();
-        subpatchStack.push(new SubpatchFrame(editor.toDocument(), patchNode));
+        subpatchStack.push(new SubpatchFrame(editor.toDocument(), node, patchNode));
         editor.loadDocument(patchNode.getDocument());
         refreshSubpatchBreadcrumb();
         showScreen(Screen.EDITOR);
@@ -577,14 +578,16 @@ public final class SynthApp extends Application {
         SubpatchFrame frame = subpatchStack.pop();
         Node replacement;
         try {
-            replacement = PatchNode.create(frame.originalNode().getName(), editor.toDocument());
+            replacement = editor.getPatchCodec().withVoices(
+                    PatchNode.create(frame.originalNode().getName(), editor.toDocument()),
+                    PolyNode.voicesOf(frame.outerNode()));
         } catch (IllegalArgumentException ex) {
             subpatchStack.push(frame);
             showError("Could not close the subpatch: " + ex.getMessage());
             return;
         }
         PatchDocument parent = frame.parentDocument();
-        parent.replaceNode(frame.originalNode(), replacement);
+        parent.replaceNode(frame.outerNode(), replacement);
         editor.loadDocument(parent);
         editor.markDirty();
         refreshSubpatchBreadcrumb();
@@ -985,7 +988,7 @@ public final class SynthApp extends Application {
     private void openNodeDocumentation(Node node) {
         showScreen(Screen.DOCS);
         String key = Docs.keyFor(editor.getNodeFactory(), node);
-        String notes = node instanceof PatchNode patchNode ? subpatchNotes(patchNode) : "";
+        String notes = PolyNode.unwrap(node) instanceof PatchNode patchNode ? subpatchNotes(patchNode) : "";
         docsView.showNode(key, notes);
     }
 

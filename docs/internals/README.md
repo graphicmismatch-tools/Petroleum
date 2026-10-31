@@ -56,6 +56,8 @@ For using Petroleum rather than modifying it, see the
 - [Tracker](tracker.md) - step sequencer with per-note pitch and timing
   effects, polyphonic piano roll, and MIDI import, export and playback
 - [Modules](modules.md) - a saved patch used as a node
+- [Polyphony](polyphony.md) - a voice count on any node: N independent voices
+  behind shared and per-voice ports, summed to one output
 - [Generators](generators.md) - seeded category generators that emit a patch
   document
 

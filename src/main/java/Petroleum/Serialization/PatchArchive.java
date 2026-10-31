@@ -47,6 +47,17 @@ final class PatchArchive {
         return id;
     }
 
+    int contentHash() {
+        int hash = 1;
+        for (float[] table : samples.values()) {
+            hash = 31 * hash + Arrays.hashCode(table);
+        }
+        for (byte[] bytes : data.values()) {
+            hash = 31 * hash + Arrays.hashCode(bytes);
+        }
+        return hash;
+    }
+
     float[] sample(String id) {
         float[] table = samples.get(id);
         if (table == null) {
