@@ -182,6 +182,22 @@ are no longer `Stateful`: they expose raw bytes (`saveSongData`/`loadSongData`,
 `getMidiData`/`loadMidi`), and `PatchCodec` special-cases them into `data/`
 archive entries, the same way it already special-cases sample-carrying nodes.
 
+### `voices` (polyphonic nodes)
+
+A `PolyNode` is not its own type. `saveNode` writes the **template** node's
+ordinary JSON, including its type, fields and `Stateful` state, and adds
+`"voices": N`. It reads `x`, `y` and `portValues` from the wrapper.
+`loadNode` checks `voices` first and runs the ordinary type switch
+(`loadVoice`) N times on the same JSON, so each voice is an independent
+instance.
+
+`withVoices(node, n)` builds or unwraps a poly node for the editor.
+`syncVoices(node)` re-copies voices 2..N from the template when its stamp
+changes. The stamp is the template's encoded JSON plus
+`PatchArchive.contentHash()`, a hash over the archive's samples and data
+blobs, because an edited sample keeps the same archive id. See
+[Polyphony](polyphony.md).
+
 ## Oscillators (`OscillatorCodec`)
 
 `IOscillator` is not a `Node`, and `OscillatorNode` is not registered in

@@ -1127,10 +1127,14 @@ public final class GraphEditor {
     }
 
     public Patch buildPatch() {
+        syncVoices();
+        return model.buildPatch();
+    }
+
+    void syncVoices() {
         for (Node node : model.getNodes()) {
             patchCodec.syncVoices(node);
         }
-        return model.buildPatch();
     }
 
     public void refreshWaveforms(Patch patch) {

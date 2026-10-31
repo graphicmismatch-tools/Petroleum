@@ -578,6 +578,7 @@ public final class SynthApp extends Application {
         SubpatchFrame frame = subpatchStack.pop();
         Node replacement;
         try {
+            editor.syncVoices();
             replacement = editor.getPatchCodec().withVoices(
                     PatchNode.create(frame.originalNode().getName(), editor.toDocument()),
                     PolyNode.voicesOf(frame.outerNode()));

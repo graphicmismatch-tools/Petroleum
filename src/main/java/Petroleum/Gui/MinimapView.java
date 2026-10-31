@@ -2,6 +2,7 @@ package Petroleum.Gui;
 
 import Petroleum.Instruments.InstrumentNode;
 import Petroleum.Modules.PatchNode;
+import Petroleum.Polyphony.PolyNode;
 import Petroleum.Serialization.Macro;
 import Petroleum.Sinks.AudioOutNode;
 import Petroleum.Tracker.PianoRollNode;
@@ -109,7 +110,7 @@ final class MinimapView {
     static List<Waypoint> waypoints(GraphEditor editor) {
         List<Waypoint> found = new ArrayList<>();
         for (NodeView view : editor.getNodeViews()) {
-            Petroleum.Graph.Node node = view.getNode();
+            Petroleum.Graph.Node node = PolyNode.unwrap(view.getNode());
             double x = view.getLayoutX() + editor.getOriginX() + GraphEditor.nodeWidth(view) / 2.0;
             double y = view.getLayoutY() + editor.getOriginY() + GraphEditor.nodeHeight(view) / 2.0;
             if (node instanceof AnnotationSource annotation) {

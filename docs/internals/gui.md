@@ -1381,6 +1381,22 @@ Gui's categories or menu structure.
   file's existing plain-shape tooltip convention (used elsewhere for port
   handles) rather than `Control.setTooltip(...)` (used for the "?" button
   itself, an actual `Button`).
+- **Polyphonic nodes** - see [Polyphony](polyphony.md):
+  - `NodeView` computes `subject = PolyNode.unwrap(node)` and runs every
+    type check against it: the edit buttons, the formula, wrapper-combo,
+    note and annotation controls, and the context menu.
+  - Knob rows are built only for the first `sharedInputCount()` inputs, so
+    per-voice `port/N` inputs are wire-only.
+  - The context menu adds **Voices** (1/2/4/8/16) for any
+    `PolyNode.supports` node. It calls `GraphEditor.convertVoices`, which
+    reuses `convertChannels`.
+  - `GraphEditor.openWaveformEditor`/`openSoundClipEditor` pass the template.
+  - `GraphEditor.syncVoices()` runs before `buildPatch` and before
+    `closeSubpatchEditor` builds its `PatchNode`. Without the second call, a
+    poly inside a subpatch would keep stale voices until reload.
+  - `SubpatchFrame` keeps the outer node so a poly subpatch is re-wrapped
+    with the same voice count on Done. `MinimapView` and `Docs.keyFor` also
+    unwrap.
 - **`WaveformView`** - a package-private `Canvas` strip (36 px tall, width
   bound to its node's width) drawn on every `NodeView` between the port rows
   and the footer controls, showing the node's most recent audio block as an

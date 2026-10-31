@@ -104,7 +104,8 @@ codec round trip (`PatchCodec.withVoices` / `copies`).
 - `PatchCodec.syncVoices` re-copies them when the template's **stamp**
   changes. The stamp is the template's encoded JSON plus a hash of its archive
   samples and data blobs, since an edited sample keeps its archive id.
-  `GraphEditor.buildPatch` calls it for every node before building.
+  `GraphEditor.syncVoices()` calls it for every node, before `buildPatch` and
+  before closing a subpatch.
 - Copying only on a stamp change matters. Nodes keep their DSP state across
   `Patch` rebuilds, and the editor rebuilds on every graph change during
   playback. An unconditional re-copy would reset every voice's envelope and
