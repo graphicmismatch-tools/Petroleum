@@ -1276,7 +1276,11 @@ Gui's categories or menu structure.
     the node but nothing observed the node, so moving a macro slider left the
     node's own knob showing a stale number. `NodeView.syncControlsFromNodes()`
     re-reads every binding's current `knob` into its `SliderField`, guarded by
-    a `syncing` flag so setting the slider does not write back and loop;
+    a `syncing` flag so setting the slider does not write back and loop.
+    It also re-reads the Annotation `TextArea` and Note `TextField` from
+    their nodes (only when the text differs, so the caret is left alone) -
+    without this, a collaboration update that `loadState`s new text into an
+    existing node never showed up on screen;
     `GraphEditor` exposes
     `refreshKnobDisplays()` for the panel to call and `setOnKnobChanged(...)`
     for the reverse direction, which `SynthApp` binds to

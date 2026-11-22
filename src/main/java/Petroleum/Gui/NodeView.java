@@ -38,6 +38,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseButton;
@@ -84,6 +85,7 @@ public final class NodeView extends Pane {
     private final List<PortHandle> outputHandles = new ArrayList<>();
     private final Map<String, KnobBinding> bindings = new LinkedHashMap<>();
     private boolean syncing;
+    private final List<Runnable> textSyncs = new ArrayList<>();
     private final Rectangle fullBackground;
     private final WaveformView waveform = new WaveformView();
     private final float[] waveformScratch = new float[Patch.DEFAULT_BLOCK_CAPACITY];
@@ -834,8 +836,15 @@ public final class NodeView extends Pane {
             for (KnobBinding binding : bindings.values()) {
                 applyValue(binding.field, binding.knob.getValue());
             }
+            textSyncs.forEach(Runnable::run);
         } finally {
             syncing = false;
+        }
+    }
+
+    private static void syncText(TextInputControl control, String text) {
+        if (!control.getText().equals(text)) {
+            control.setText(text);
         }
     }
 
@@ -884,6 +893,7 @@ public final class NodeView extends Pane {
         field.setLayoutY(y);
         field.prefWidthProperty().bind(widthProperty().subtract(PADDING * 2));
         field.setPromptText("A4, C#3, Bb5+25c...");
+        textSyncs.add(() -> syncText(field, noteSource.getNoteText()));
 
         field.textProperty().addListener((obs, oldText, newText) -> {
             try {
@@ -938,6 +948,7 @@ public final class NodeView extends Pane {
         area.prefHeightProperty().bind(heightProperty().subtract(y).subtract(PADDING));
 
         area.textProperty().addListener((obs, oldText, newText) -> annotation.setText(newText));
+        textSyncs.add(() -> syncText(area, annotation.getText()));
 
         getChildren().add(area);
     }
